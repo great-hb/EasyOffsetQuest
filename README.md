@@ -10,16 +10,22 @@ Install `EasyOffsetQuest.qmod` using [ModsBeforeFriday (MBF)](https://mbf.bsques
 
 ## Loading PC presets
 
-1. Export a preset from PC EasyOffset in v2 format.
-2. Copy its `.json` file into:
+1. In PC **Easy Offset 2.x**, save your controller settings as a preset. The [PC releases](https://github.com/Reezonate/EasyOffset/releases) using this format span **Beat Saber 1.18.3–1.42.0**; choose the Easy Offset release for your PC game version.
+2. Open your PC Beat Saber folder and find the saved preset's `.json` file in:
+
+   ```text
+   UserData/EasyOffset/Presets/
+   ```
+
+3. Copy that file into:
 
    ```text
    /sdcard/ModData/com.beatgames.beatsaber/Mods/EasyOffsetQuest/Presets/
    ```
 
-3. In the Easy Offset tab, press **Refresh**, select the preset, and press **Load**.
+4. In the Easy Offset tab, press **Refresh**, select the preset, and press **Load**.
 
-Use **PC Meta Link** as the profile tracking space for PC presets. Import an exported preset, not the PC application's main configuration file.
+Use **PC Meta Link** as the profile tracking space for PC presets. Use a saved preset from the `Presets` folder; the PC application's main `UserData/EasyOffset.json` file has a different format.
 
 **Save** updates the selected preset. **Save As** creates a new named preset from the entered name. **Delete** removes the selected preset after confirmation; Default is kept as the fallback preset. Controller adjustments are also saved automatically between launches.
 
