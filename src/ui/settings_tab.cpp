@@ -223,6 +223,11 @@ void Build(UnityEngine::GameObject* container,bool first) {
     keyboardObject->get_transform()->set_localScale({.75f,.75f,.75f});
     g_nameKeyboard=keyboardObject->GetComponent<BSML::ModalKeyboard*>();
     g_nameKeyboard->clearOnOpen=false;
+    // Top row, opposite Clear, using the same key style as the keyboard.
+    g_nameKeyboard->keyboard->AddKeys("@31,11 [CANCEL]/30");
+    g_nameKeyboard->keyboard->SetAction("CANCEL",[](BSML::Key*) {
+        if(g_nameKeyboard) g_nameKeyboard->modalView->Hide();
+    });
     g_nameKeyboard->modalView->moveToCenter=true;
     g_nameKeyboard->modalView->dismissOnBlockerClicked=true;
     g_nameKeyboard->onEnter=[](StringW value) {
