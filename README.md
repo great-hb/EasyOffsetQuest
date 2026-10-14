@@ -10,7 +10,7 @@ Install `EasyOffsetQuest.qmod` using [ModsBeforeFriday (MBF)](https://mbf.bsques
 
 ## Loading PC presets
 
-1. Save a preset in PC **Easy Offset 2.1.2 or newer** (the OpenXR-compatible versions). Settings carried over from before the OpenXR update must be retuned first.
+1. Save a preset in PC **Easy Offset 2.1.2 or newer**
 2. Open your PC Beat Saber folder and find the saved preset's `.json` file in:
 
    ```text
