@@ -10,7 +10,7 @@ Install `EasyOffsetQuest.qmod` using [ModsBeforeFriday (MBF)](https://mbf.bsques
 
 ## Loading PC presets
 
-1. In PC **Easy Offset 2.x**, save your controller settings as a preset. The [PC releases](https://github.com/Reezonate/EasyOffset/releases) using this format span **Beat Saber 1.18.3–1.42.0**; choose the Easy Offset release for your PC game version.
+1. Save a preset in PC **Easy Offset 2.1.2 or newer** (the OpenXR-compatible versions). Settings carried over from before the OpenXR update must be retuned first.
 2. Open your PC Beat Saber folder and find the saved preset's `.json` file in:
 
    ```text
