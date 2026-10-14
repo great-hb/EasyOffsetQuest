@@ -11,6 +11,9 @@
 #include "bsml/shared/BSML/Components/Settings/SliderSetting.hpp"
 #include "bsml/shared/BSML/Components/Settings/ToggleSetting.hpp"
 #include "bsml/shared/BSML/GameplaySetup/GameplaySetup.hpp"
+#include "bsml/shared/BSML/Tags/ModalKeyboardTag.hpp"
+#include "bsml/shared/BSML/Components/Keyboard/ModalKeyboard.hpp"
+#include "bsml/shared/Helpers/delegates.hpp"
 #include "UnityEngine/GameObject.hpp"
 #include "UnityEngine/Object.hpp"
 #include "UnityEngine/UI/LayoutElement.hpp"
@@ -32,6 +35,12 @@ UnityW<BSML::DropdownListSetting> g_presetDropdown;
 UnityW<BSML::DropdownListSetting> g_modeDropdown,g_buttonDropdown,g_typeDropdown,g_spaceDropdown;
 UnityW<BSML::ToggleSetting> g_freeHand,g_enabled;
 UnityW<UnityEngine::UI::Button> g_saveAs;
+UnityW<HMUI::InputFieldView> g_nameField;
+UnityW<BSML::ModalKeyboard> g_nameKeyboard;
+// Expose the same factory used by BSML's string-setting tag for Lite UI.
+struct PresetKeyboardTag : BSML::ModalKeyboardTag {
+    using BSML::ModalKeyboardTag::CreateObject;
+};
 std::string g_newPresetName="New Preset";
 std::vector<std::string> g_presetNames;
 std::vector<std::string_view> g_presetViews;
@@ -206,6 +215,27 @@ void Build(UnityEngine::GameObject* container,bool first) {
     });
     OffsetUI::Bounds(name->get_gameObject(),-1,7);
     for(auto* text:name->GetComponentsInChildren<TMPro::TextMeshProUGUI*>(true)) OffsetUI::Font(text,2.8f);
+    g_nameField=name;
+    name->_useGlobalKeyboard=false;
+    // Keep the keyboard outside ScrollContent. ModalView promotes it to the
+    // view controller's popup layer and centers it independently of scrolling.
+    auto* keyboardObject=PresetKeyboardTag{}.CreateObject(container->get_transform());
+    keyboardObject->get_transform()->set_localScale({.75f,.75f,.75f});
+    g_nameKeyboard=keyboardObject->GetComponent<BSML::ModalKeyboard*>();
+    g_nameKeyboard->clearOnOpen=false;
+    g_nameKeyboard->modalView->moveToCenter=true;
+    g_nameKeyboard->modalView->dismissOnBlockerClicked=true;
+    g_nameKeyboard->onEnter=[](StringW value) {
+        if(GetTweakConfig().uiLock) return;
+        g_newPresetName=std::string(value);
+        if(g_nameField) g_nameField->SetText(value);
+    };
+    name->add_selectionStateDidChangeEvent(BSML::MakeSystemAction<HMUI::InputFieldView::SelectionState>(
+        std::function<void(HMUI::InputFieldView::SelectionState)>([](auto state) {
+            if(state!=HMUI::InputFieldView::SelectionState::Pressed || GetTweakConfig().uiLock || !g_nameKeyboard) return;
+            g_nameKeyboard->modalView->Show();
+            g_nameKeyboard->SetText(StringW(g_newPresetName));
+        })));
     g_saveAs=BSML::Lite::CreateUIButton(newPreset->get_transform(),"Save As",[] {
         if(GetTweakConfig().uiLock) return;
         GestureController::Cancel();
@@ -243,6 +273,7 @@ void RefreshSettingsValues() {
         g_freeHand->set_Value(GetTweakConfig().useFreeHand);
         g_freeHand->set_interactable(!GetTweakConfig().uiLock);
     }
+    if(g_nameField) g_nameField->set_interactable(!GetTweakConfig().uiLock);
     if(g_saveAs) g_saveAs->set_interactable(!GetTweakConfig().uiLock);
     if(g_presetDropdown) g_presetDropdown->set_interactable(!GetTweakConfig().uiLock);
     Status(); g_syncing=false;
@@ -253,6 +284,14 @@ void RegisterSettingsTab() {
 void RebuildSettingsTab() {
     if(!g_container) return;
     GestureController::Cancel();
+    // A shown modal is temporarily reparented outside the tab by HMUI.
+    if(g_nameKeyboard) {
+        g_nameKeyboard->modalView->HMUI::ModalView::Hide(false,nullptr);
+        auto keyboardObject=g_nameKeyboard->get_gameObject();
+        keyboardObject->SetActive(false); UnityEngine::Object::Destroy(keyboardObject);
+        g_nameKeyboard=nullptr;
+    }
+    g_nameField=nullptr;
     auto parent=g_container->get_transform();
     for(int i=parent->get_childCount()-1;i>=0;i--) {
         auto child=parent->GetChild(i)->get_gameObject();
