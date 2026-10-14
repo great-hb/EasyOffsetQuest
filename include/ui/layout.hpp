@@ -127,16 +127,22 @@ inline void Button(UnityEngine::UI::Button* button,float width=-1) {
     Bounds(button->get_gameObject(),width,6);
     for(auto* text:button->GetComponentsInChildren<TMPro::TextMeshProUGUI*>(true)) Font(text,2.8f);
 }
-// The compact step buttons use layout cells instead of the slider prefab's
-// asymmetric arrow anchors. Remove the practice button's internal text padding.
+// BSML buttons clone PracticeButton. Its StackLayoutGroup normally resizes
+// BG, Underline and Content together. After disabling that layout for a small
+// arrow, every layer must be anchored explicitly or BG keeps its 24-unit width.
 inline void StepButton(UnityEngine::UI::Button* button) {
-    Bounds(button->get_gameObject(),4.5f,5);
+    Bounds(button->get_gameObject(),5,5);
     for(auto* layout:button->GetComponentsInChildren<UnityEngine::UI::LayoutGroup*>(true)) layout->set_enabled(false);
     for(auto* fitter:button->GetComponentsInChildren<UnityEngine::UI::ContentSizeFitter*>(true)) fitter->set_enabled(false);
-    auto content=button->get_transform()->Find("Content");
-    if(content) Stretch(content->GetComponent<UnityEngine::RectTransform*>());
+    for(auto name:{"BG","Underline","Content"}) {
+        auto child=button->get_transform()->Find(name);
+        if(!child) continue;
+        auto* rect=child->GetComponent<UnityEngine::RectTransform*>();
+        Stretch(rect);
+        rect->set_offsetMin({0,.5f}); rect->set_offsetMax({0,-.5f});
+    }
     for(auto* text:button->GetComponentsInChildren<TMPro::TextMeshProUGUI*>(true)) {
-        Stretch(Rect(text->get_gameObject())); Font(text,2.8f);
+        Stretch(Rect(text->get_gameObject())); Font(text,3.2f);
         text->set_alignment(TMPro::TextAlignmentOptions::Center);
     }
 }
@@ -153,8 +159,14 @@ inline void Slider(BSML::SliderSetting* setting) {
     setting->slider->get_transform()->SetParent(setting->get_transform(),false);
     Stretch(Rect(setting->slider->get_gameObject()));
     auto background=setting->slider->get_transform()->Find("BG");
-    if(background) Stretch(background->GetComponent<UnityEngine::RectTransform*>());
+    if(background) {
+        auto* rect=background->GetComponent<UnityEngine::RectTransform*>();
+        Stretch(rect); rect->set_offsetMin({0,.5f}); rect->set_offsetMax({0,-.5f});
+    }
     auto slidingArea=setting->slider->get_transform()->Find("SlidingArea");
-    if(slidingArea) Stretch(slidingArea->GetComponent<UnityEngine::RectTransform*>(),1,1);
+    if(slidingArea) {
+        auto* rect=slidingArea->GetComponent<UnityEngine::RectTransform*>();
+        Stretch(rect); rect->set_offsetMin({1,1.5f}); rect->set_offsetMax({-1,-1.5f});
+    }
 }
 }

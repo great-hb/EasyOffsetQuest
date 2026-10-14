@@ -150,7 +150,7 @@ void Build(UnityEngine::GameObject* container,bool first) {
     auto* left=OffsetUI::Text(hands->get_transform(),"<color=#ff6666>Left</color>",4,3);
     left->set_alignment(TMPro::TextAlignmentOptions::Center);
     auto* units=OffsetUI::Text(hands->get_transform(),"cm / °",4,2.7f);
-    OffsetUI::Bounds(units->get_gameObject(),16,4); units->set_alignment(TMPro::TextAlignmentOptions::Center);
+    OffsetUI::Bounds(units->get_gameObject(),14,4); units->set_alignment(TMPro::TextAlignmentOptions::Center);
     auto* right=OffsetUI::Text(hands->get_transform(),"<color=#7777ff>Right</color>",4,3);
     right->set_alignment(TMPro::TextAlignmentOptions::Center);
     constexpr std::array<const char*,7> labels={"Z Offset","Pivot X","Pivot Y","Pivot Z","Rot X","Rot Y","Rot Z"};
@@ -160,7 +160,7 @@ void Build(UnityEngine::GameObject* container,bool first) {
         for(int hand=0;hand<2;hand++) {
             if(hand==1) {
                 auto* label=OffsetUI::Text(row->get_transform(),labels[field],5,2.8f);
-                OffsetUI::Bounds(label->get_gameObject(),16,5); label->set_alignment(TMPro::TextAlignmentOptions::Center);
+                OffsetUI::Bounds(label->get_gameObject(),14,5); label->set_alignment(TMPro::TextAlignmentOptions::Center);
             }
             auto* cell=OffsetUI::Row(row->get_transform(),5,.5f);
             auto parent=cell->get_transform();
@@ -171,8 +171,8 @@ void Build(UnityEngine::GameObject* container,bool first) {
             OffsetUI::Slider(slider); g_sliders[hand][field]=slider;
             auto* increase=BSML::Lite::CreateUIButton(parent,"›",[hand,field]{Step(hand,field,1);});
             OffsetUI::StepButton(increase); g_stepButtons[hand][field][1]=increase;
-            auto* readout=OffsetUI::Text(parent,"",5,2.7f);
-            OffsetUI::Bounds(readout->get_gameObject(),11,5);
+            auto* readout=OffsetUI::Text(parent,"",5,3.0f);
+            OffsetUI::Bounds(readout->get_gameObject(),13,5);
             readout->set_alignment(TMPro::TextAlignmentOptions::Center);
             g_values[hand][field]=readout; Readout(hand,field);
         }
