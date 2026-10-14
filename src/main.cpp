@@ -5,7 +5,6 @@
 #include "offset_controller.hpp"
 #include "scene_tracker.hpp"
 #include "scotland2/shared/modloader.h"
-#include "ui/mod_settings.hpp"
 #include "ui/settings_tab.hpp"
 #include "bsml/shared/BSML.hpp"
 #include "UnityEngine/Application.hpp"
@@ -57,5 +56,4 @@ MOD_EXTERN_FUNC void late_load() noexcept {
 
   SetLanguage(static_cast<Language>(GetTweakConfig().language));
   RegisterSettingsTab();
-  RegisterModSettings();
 }

@@ -1,12 +1,12 @@
 # EasyOffsetQuest
 
-EasyOffsetQuest was created primarily to bring PC EasyOffset controller settings to native Quest Beat Saber **1.40.8**. This mod is very primitive compared to PC EasyOffset.
+EasyOffsetQuest was created primarily to bring PC EasyOffset controller settings to native Quest Beat Saber **1.40.8** (untested on Quest 3/3S). This mod is very primitive compared to PC EasyOffset.
 
 Note: This mod was developed with AI.
 
 ## Installation
 
-Install `EasyOffsetQuest.qmod` using [ModsBeforeFriday (MBF)](https://mbf.bsquest.xyz/). Open the **Easy Offset** tab on the song selection screen to adjust your controllers. Global options are under **Mod Settings → Easy Offset Quest**.
+Install `EasyOffsetQuest.qmod` using [ModsBeforeFriday (MBF)](https://mbf.bsquest.xyz/). Open the **Easy Offset** tab on the song selection screen to adjust your controllers.
 
 ## Loading PC presets
 
@@ -21,7 +21,7 @@ Install `EasyOffsetQuest.qmod` using [ModsBeforeFriday (MBF)](https://mbf.bsques
 
 Use **PC Meta Link** as the profile tracking space for PC presets. Import an exported preset, not the PC application's main configuration file.
 
-**Save** updates the selected preset. **Save As** in Mod Settings creates a new named preset. Controller adjustments are also saved automatically between launches.
+**Save** updates the selected preset. **Save As** creates a new named preset from the entered name. Controller adjustments are also saved automatically between launches.
 
 ## Building
 

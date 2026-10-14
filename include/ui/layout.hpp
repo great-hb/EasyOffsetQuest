@@ -76,14 +76,12 @@ inline UnityEngine::UI::VerticalLayoutGroup* Column(UnityEngine::Transform* pare
     column->set_childAlignment(UnityEngine::TextAnchor::UpperCenter);
     return column;
 }
-inline UnityEngine::GameObject* ScrollContent(UnityEngine::Transform* parent,bool settingsPage=false) {
-    auto* content=settingsPage?BSML::Lite::CreateScrollableSettingsContainer(parent):BSML::Lite::CreateScrollView(parent);
+inline UnityEngine::GameObject* ScrollContent(UnityEngine::Transform* parent) {
+    auto* content=BSML::Lite::CreateScrollView(parent);
     auto* external=content->GetComponent<BSML::ExternalComponents*>();
     auto* scroll=external->Get<BSML::ScrollView*>();
     auto* frame=external->Get<UnityEngine::RectTransform*>();
-    if(!settingsPage) {
-        Stretch(frame); frame->set_sizeDelta({-8,-4}); frame->set_anchoredPosition({-2,0});
-    }
+    Stretch(frame); frame->set_sizeDelta({-8,-4}); frame->set_anchoredPosition({-2,0});
     auto* layout=content->GetComponent<UnityEngine::UI::VerticalLayoutGroup*>();
     layout->set_childControlWidth(true); layout->set_childControlHeight(true);
     layout->set_childForceExpandWidth(true); layout->set_childForceExpandHeight(false);

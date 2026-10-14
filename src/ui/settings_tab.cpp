@@ -25,8 +25,10 @@ UnityW<UnityEngine::GameObject> g_container;
 std::array<std::array<UnityW<BSML::SliderSetting>,7>,2> g_sliders{};
 UnityW<TMPro::TextMeshProUGUI> g_status;
 UnityW<BSML::DropdownListSetting> g_presetDropdown;
-UnityW<BSML::DropdownListSetting> g_modeDropdown,g_buttonDropdown,g_typeDropdown;
-UnityW<BSML::ToggleSetting> g_freeHand;
+UnityW<BSML::DropdownListSetting> g_modeDropdown,g_buttonDropdown,g_typeDropdown,g_spaceDropdown;
+UnityW<BSML::ToggleSetting> g_freeHand,g_enabled;
+UnityW<UnityEngine::UI::Button> g_saveAs;
+std::string g_newPresetName="New Preset";
 std::vector<std::string> g_presetNames;
 std::vector<std::string_view> g_presetViews;
 std::string g_selectedPreset="Default";
@@ -36,6 +38,7 @@ constexpr std::array<AdjustmentMode,7> modeValues={AdjustmentMode::None,Adjustme
 std::array<std::string_view,5> buttons={"Thumbstick","Trigger","Grip","A / X","B / Y"};
 constexpr std::array<ControllerButton,5> buttonValues={ControllerButton::ThumbstickPress,ControllerButton::Trigger,ControllerButton::Grip,ControllerButton::PrimaryButton,ControllerButton::SecondaryButton};
 std::array<std::string_view,3> types={"Quest 2","Quest 3","Quest Pro"};
+std::array<std::string_view,2> spaces={"PC Meta Link","Native Quest"};
 HandTweakConfig& Hand(int index) { return index==0?GetTweakConfig().left:GetTweakConfig().right; }
 float Value(const HandTweakConfig& h,int field) {
     switch(field) {
@@ -83,9 +86,23 @@ void Build(UnityEngine::GameObject* container,bool first) {
         });
         OffsetUI::Dropdown(column==0?g_typeDropdown.ptr():column==1?g_modeDropdown.ptr():g_buttonDropdown.ptr(),true);
     }
-    auto* toggles=OffsetUI::Row(vt,6,3);
+    g_spaceDropdown=BSML::Lite::CreateDropdown(vt,"Profile space",spaces[GetTweakConfig().trackingSpace],std::span<std::string_view>(spaces),[](StringW value) {
+        if(g_syncing || GetTweakConfig().uiLock) return;
+        GestureController::Cancel();
+        GetTweakConfig().trackingSpace=std::string(value)==spaces[0]?0:1;
+        SaveTweakConfig(); RefreshSettingsValues();
+    });
+    OffsetUI::Dropdown(g_spaceDropdown.ptr());
+    auto* toggles=OffsetUI::Row(vt,6,2);
+    auto* enabledCell=OffsetUI::Column(toggles->get_transform(),6);
+    g_enabled=BSML::Lite::CreateToggle(enabledCell->get_transform(),"Enabled",GetTweakConfig().enabled,[](bool value) {
+        if(g_syncing) return;
+        GestureController::Cancel(); GetTweakConfig().enabled=value;
+        SaveTweakConfig(); RefreshSettingsValues();
+    });
+    OffsetUI::Toggle(g_enabled.ptr());
     auto* freeHandCell=OffsetUI::Column(toggles->get_transform(),6);
-    g_freeHand=BSML::Lite::CreateToggle(freeHandCell->get_transform(),"Use free hand",GetTweakConfig().useFreeHand,[](bool value) {
+    g_freeHand=BSML::Lite::CreateToggle(freeHandCell->get_transform(),"Free hand",GetTweakConfig().useFreeHand,[](bool value) {
         if(g_syncing || GetTweakConfig().uiLock) return;
         GestureController::Cancel(); GetTweakConfig().useFreeHand=value; SaveTweakConfig();
     });
@@ -149,6 +166,20 @@ void Build(UnityEngine::GameObject* container,bool first) {
         LoadPreset(g_selectedPreset); RefreshSettingsValues(); Status();
     }),14);
     OffsetUI::Button(BSML::Lite::CreateUIButton(bottom->get_transform(),"Refresh",[] { RebuildSettingsTab(); }),18);
+    auto* newPreset=OffsetUI::Row(vt,7);
+    auto* nameCell=OffsetUI::Column(newPreset->get_transform(),7);
+    auto* name=BSML::Lite::CreateStringSetting(nameCell->get_transform(),"Preset name",g_newPresetName,[](StringW value) {
+        if(!g_syncing) g_newPresetName=std::string(value);
+    });
+    OffsetUI::Bounds(name->get_gameObject(),-1,7);
+    for(auto* text:name->GetComponentsInChildren<TMPro::TextMeshProUGUI*>(true)) OffsetUI::Font(text,2.8f);
+    g_saveAs=BSML::Lite::CreateUIButton(newPreset->get_transform(),"Save As",[] {
+        if(GetTweakConfig().uiLock) return;
+        GestureController::Cancel();
+        if(SavePreset(g_newPresetName)) RebuildSettingsTab();
+        else Status();
+    });
+    OffsetUI::Button(g_saveAs.ptr(),18);
     g_status=OffsetUI::Text(vt,PresetStatus(),4,2.6f);
     RefreshSettingsValues();
 }
@@ -166,7 +197,16 @@ void RefreshSettingsValues() {
             g_buttonDropdown->set_Value(reinterpret_cast<System::Object*>(static_cast<Il2CppString*>(StringW(buttons[i]))));
         g_buttonDropdown->set_interactable(!GetTweakConfig().uiLock);
     }
-    if(g_freeHand) g_freeHand->set_interactable(!GetTweakConfig().uiLock);
+    if(g_spaceDropdown) {
+        g_spaceDropdown->set_Value(reinterpret_cast<System::Object*>(static_cast<Il2CppString*>(StringW(spaces[GetTweakConfig().trackingSpace]))));
+        g_spaceDropdown->set_interactable(!GetTweakConfig().uiLock);
+    }
+    if(g_enabled) g_enabled->set_Value(GetTweakConfig().enabled);
+    if(g_freeHand) {
+        g_freeHand->set_Value(GetTweakConfig().useFreeHand);
+        g_freeHand->set_interactable(!GetTweakConfig().uiLock);
+    }
+    if(g_saveAs) g_saveAs->set_interactable(!GetTweakConfig().uiLock);
     if(g_presetDropdown) g_presetDropdown->set_interactable(!GetTweakConfig().uiLock);
     Status(); g_syncing=false;
 }
@@ -181,7 +221,7 @@ void RebuildSettingsTab() {
         auto child=parent->GetChild(i)->get_gameObject();
         child->SetActive(false); UnityEngine::Object::Destroy(child);
     }
-    g_sliders={}; g_status=nullptr; g_presetDropdown=nullptr; g_modeDropdown=nullptr; g_buttonDropdown=nullptr; g_typeDropdown=nullptr; g_freeHand=nullptr;
+    g_sliders={}; g_status=nullptr; g_presetDropdown=nullptr; g_modeDropdown=nullptr; g_buttonDropdown=nullptr; g_typeDropdown=nullptr; g_spaceDropdown=nullptr; g_freeHand=nullptr; g_enabled=nullptr; g_saveAs=nullptr;
     Build(g_container.ptr(),true);
 }
 void SyncDropdownsToConfig() {} // Dropdown callbacks commit immediately.
