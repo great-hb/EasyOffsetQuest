@@ -16,13 +16,17 @@
 #include "UnityEngine/UI/LayoutElement.hpp"
 #include "UnityEngine/TextAnchor.hpp"
 #include "TMPro/TextMeshProUGUI.hpp"
+#include <algorithm>
 #include <array>
+#include <cstdio>
 #include <string>
 #include <vector>
 
 namespace {
 UnityW<UnityEngine::GameObject> g_container;
 std::array<std::array<UnityW<BSML::SliderSetting>,7>,2> g_sliders{};
+std::array<std::array<UnityW<TMPro::TextMeshProUGUI>,7>,2> g_values{};
+std::array<std::array<std::array<UnityW<UnityEngine::UI::Button>,2>,7>,2> g_stepButtons{};
 UnityW<TMPro::TextMeshProUGUI> g_status;
 UnityW<BSML::DropdownListSetting> g_presetDropdown;
 UnityW<BSML::DropdownListSetting> g_modeDropdown,g_buttonDropdown,g_typeDropdown,g_spaceDropdown;
@@ -46,6 +50,34 @@ float Value(const HandTweakConfig& h,int field) {
     case 4:return h.rotationEuler.x; case 5:return h.rotationEuler.y; default:return h.rotationEuler.z;
     }
 }
+float Minimum(int field) { return field==0?0.f:field<4?-40.f:-180.f; }
+float Maximum(int field) { return field==0?30.f:field<4?40.f:180.f; }
+void Readout(int hand,int field) {
+    if(!g_values[hand][field]) return;
+    char text[32];
+    std::snprintf(text,sizeof(text),"%.2f",Value(Hand(hand),field));
+    g_values[hand][field]->set_text(StringW(text));
+}
+void SetField(int hand,int field,float value) {
+    if(g_syncing) return;
+    if(GetTweakConfig().uiLock) { RefreshSettingsValues(); return; }
+    GestureController::Cancel(); auto& h=Hand(hand);
+    switch(field) {
+    case 0:h.zOffset=value*.01f;break; case 1:h.pivot.x=value*.01f;break;
+    case 2:h.pivot.y=value*.01f;break; case 3:h.pivot.z=value*.01f;break;
+    case 4:h.rotationEuler.x=value;break;case 5:h.rotationEuler.y=value;break;case 6:h.rotationEuler.z=value;break;
+    }
+    if(field>=4) SyncQuatFromEuler(h);
+    SaveTweakConfig(); Readout(hand,field);
+}
+void Step(int hand,int field,int direction) {
+    if(g_syncing || GetTweakConfig().uiLock) return;
+    const float value=std::clamp(Value(Hand(hand),field)+direction*.1f,Minimum(field),Maximum(field));
+    SetField(hand,field,value);
+    // Programmatic slider values may be quantized by HMUI. Keep the readout
+    // tied to the actual profile and suppress callbacks while syncing the bar.
+    RefreshSettingsValues();
+}
 void Status() { if(g_status) g_status->set_text(StringW(PresetStatus())); }
 void Mirror(int from) {
     if(GetTweakConfig().uiLock) return;
@@ -61,6 +93,8 @@ void Reset(int hand) {
 void Build(UnityEngine::GameObject* container,bool first) {
     g_container=container;
     if(!first) { RefreshSettingsValues(); return; }
+    // Prefab setup can emit value changes; preserve imported profile precision.
+    g_syncing=true;
     auto* content=OffsetUI::ScrollContent(container->get_transform());
     auto vt=content->get_transform();
     // Same three-column options row as PC EasyOffset's TopPanel.
@@ -128,20 +162,19 @@ void Build(UnityEngine::GameObject* container,bool first) {
                 auto* label=OffsetUI::Text(row->get_transform(),labels[field],5,2.8f);
                 OffsetUI::Bounds(label->get_gameObject(),16,5); label->set_alignment(TMPro::TextAlignmentOptions::Center);
             }
-            auto* column=OffsetUI::Column(row->get_transform(),5);
-            auto* slider=BSML::Lite::CreateSliderSetting(column->get_transform(),"",.1f,Value(Hand(hand),field),
-                field==0?0.f:field<4?-40.f:-180.f,field==0?30.f:field<4?40.f:180.f,.12f,true,{0,0},[hand,field](float v) {
-                if(g_syncing) return;
-                if(GetTweakConfig().uiLock) { RefreshSettingsValues(); return; }
-                GestureController::Cancel(); auto& h=Hand(hand);
-                switch(field) {
-                case 0:h.zOffset=v*.01f;break; case 1:h.pivot.x=v*.01f;break; case 2:h.pivot.y=v*.01f;break; case 3:h.pivot.z=v*.01f;break;
-                case 4:h.rotationEuler.x=v;break;case 5:h.rotationEuler.y=v;break;case 6:h.rotationEuler.z=v;break;
-                }
-                if(field>=4) SyncQuatFromEuler(h);
-                SaveTweakConfig();
-            });
+            auto* cell=OffsetUI::Row(row->get_transform(),5,.5f);
+            auto parent=cell->get_transform();
+            auto* decrease=BSML::Lite::CreateUIButton(parent,"‹",[hand,field]{Step(hand,field,-1);});
+            OffsetUI::StepButton(decrease); g_stepButtons[hand][field][0]=decrease;
+            auto* slider=BSML::Lite::CreateSliderSetting(parent,"",.1f,Value(Hand(hand),field),
+                Minimum(field),Maximum(field),.12f,false,{0,0},[hand,field](float value) { SetField(hand,field,value); });
             OffsetUI::Slider(slider); g_sliders[hand][field]=slider;
+            auto* increase=BSML::Lite::CreateUIButton(parent,"›",[hand,field]{Step(hand,field,1);});
+            OffsetUI::StepButton(increase); g_stepButtons[hand][field][1]=increase;
+            auto* readout=OffsetUI::Text(parent,"",5,2.7f);
+            OffsetUI::Bounds(readout->get_gameObject(),11,5);
+            readout->set_alignment(TMPro::TextAlignmentOptions::Center);
+            g_values[hand][field]=readout; Readout(hand,field);
         }
     }
     auto* actions=OffsetUI::Row(vt,6);
@@ -186,9 +219,13 @@ void Build(UnityEngine::GameObject* container,bool first) {
 }
 void RefreshSettingsValues() {
     g_syncing=true;
-    for(int hand=0;hand<2;hand++) for(int field=0;field<7;field++) if(g_sliders[hand][field]) {
-        g_sliders[hand][field]->set_Value(Value(Hand(hand),field));
-        g_sliders[hand][field]->set_interactable(!GetTweakConfig().uiLock);
+    for(int hand=0;hand<2;hand++) for(int field=0;field<7;field++) {
+        if(g_sliders[hand][field]) {
+            g_sliders[hand][field]->set_Value(Value(Hand(hand),field));
+            g_sliders[hand][field]->set_interactable(!GetTweakConfig().uiLock);
+        }
+        Readout(hand,field);
+        for(auto& button:g_stepButtons[hand][field]) if(button) button->set_interactable(!GetTweakConfig().uiLock);
     }
     if(g_typeDropdown) { g_typeDropdown->set_Value(reinterpret_cast<System::Object*>(static_cast<Il2CppString*>(StringW(GetTweakConfig().controllerType)))); g_typeDropdown->set_interactable(!GetTweakConfig().uiLock); }
     if(g_modeDropdown) { g_modeDropdown->set_Value(reinterpret_cast<System::Object*>(static_cast<Il2CppString*>(StringW(AdjustmentModeToString(GetTweakConfig().adjustmentMode))))); g_modeDropdown->set_interactable(!GetTweakConfig().uiLock); }
@@ -221,7 +258,7 @@ void RebuildSettingsTab() {
         auto child=parent->GetChild(i)->get_gameObject();
         child->SetActive(false); UnityEngine::Object::Destroy(child);
     }
-    g_sliders={}; g_status=nullptr; g_presetDropdown=nullptr; g_modeDropdown=nullptr; g_buttonDropdown=nullptr; g_typeDropdown=nullptr; g_spaceDropdown=nullptr; g_freeHand=nullptr; g_enabled=nullptr; g_saveAs=nullptr;
+    g_sliders={}; g_values={}; g_stepButtons={}; g_status=nullptr; g_presetDropdown=nullptr; g_modeDropdown=nullptr; g_buttonDropdown=nullptr; g_typeDropdown=nullptr; g_spaceDropdown=nullptr; g_freeHand=nullptr; g_enabled=nullptr; g_saveAs=nullptr;
     Build(g_container.ptr(),true);
 }
 void SyncDropdownsToConfig() {} // Dropdown callbacks commit immediately.

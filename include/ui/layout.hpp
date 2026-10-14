@@ -12,6 +12,7 @@
 #include "UnityEngine/RectTransform.hpp"
 #include "UnityEngine/UI/ContentSizeFitter.hpp"
 #include "UnityEngine/UI/LayoutElement.hpp"
+#include "UnityEngine/UI/LayoutGroup.hpp"
 #include "UnityEngine/UI/Button.hpp"
 #include "UnityEngine/TextAnchor.hpp"
 #include "TMPro/FontStyles.hpp"
@@ -126,32 +127,34 @@ inline void Button(UnityEngine::UI::Button* button,float width=-1) {
     Bounds(button->get_gameObject(),width,6);
     for(auto* text:button->GetComponentsInChildren<TMPro::TextMeshProUGUI*>(true)) Font(text,2.8f);
 }
+// The compact step buttons use layout cells instead of the slider prefab's
+// asymmetric arrow anchors. Remove the practice button's internal text padding.
+inline void StepButton(UnityEngine::UI::Button* button) {
+    Bounds(button->get_gameObject(),4.5f,5);
+    for(auto* layout:button->GetComponentsInChildren<UnityEngine::UI::LayoutGroup*>(true)) layout->set_enabled(false);
+    for(auto* fitter:button->GetComponentsInChildren<UnityEngine::UI::ContentSizeFitter*>(true)) fitter->set_enabled(false);
+    auto content=button->get_transform()->Find("Content");
+    if(content) Stretch(content->GetComponent<UnityEngine::RectTransform*>());
+    for(auto* text:button->GetComponentsInChildren<TMPro::TextMeshProUGUI*>(true)) {
+        Stretch(Rect(text->get_gameObject())); Font(text,2.8f);
+        text->set_alignment(TMPro::TextAlignmentOptions::Center);
+    }
+}
 inline void Slider(BSML::SliderSetting* setting) {
     Bounds(setting->get_gameObject(),-1,5);
-    if(setting->text) setting->text->get_gameObject()->SetActive(false);
-    constexpr float arrowWidth=5.f, edgeInset=.5f, arrowGap=.75f;
-    constexpr float barInset=edgeInset+arrowWidth+arrowGap;
-    auto root=setting->get_transform();
-    // Give the arrows and bar one coordinate frame, independent of prefab wrappers.
-    setting->slider->get_transform()->SetParent(root,false);
-    Stretch(Rect(setting->slider->get_gameObject()),barInset,barInset);
-    Font(setting->slider->_valueText.ptr(),2.7f);
+    auto title=setting->get_transform()->Find("Title");
+    if(title) title->get_gameObject()->SetActive(false);
+    // SliderSetting::Setup assigns text to the value, not the title. A separate
+    // readout beside the bar remains visible even when prefab text is hidden.
+    auto* value=setting->slider->_valueText.ptr();
+    if(value) value->get_gameObject()->SetActive(false);
+    if(setting->decButton) setting->decButton->get_gameObject()->SetActive(false);
+    if(setting->incButton) setting->incButton->get_gameObject()->SetActive(false);
+    setting->slider->get_transform()->SetParent(setting->get_transform(),false);
+    Stretch(Rect(setting->slider->get_gameObject()));
     auto background=setting->slider->get_transform()->Find("BG");
     if(background) Stretch(background->GetComponent<UnityEngine::RectTransform*>());
     auto slidingArea=setting->slider->get_transform()->Find("SlidingArea");
     if(slidingArea) Stretch(slidingArea->GetComponent<UnityEngine::RectTransform*>(),1,1);
-    if(setting->decButton && setting->incButton) {
-        for(int side=0;side<2;side++) {
-            auto* button=side==0?setting->decButton:setting->incButton;
-            auto* rect=Rect(button->get_gameObject());
-            rect->SetParent(root,false);
-            rect->set_anchorMin({float(side),.5f}); rect->set_anchorMax({float(side),.5f});
-            rect->set_pivot({.5f,.5f}); rect->set_sizeDelta({arrowWidth,4.5f});
-            constexpr float arrowCenter=edgeInset+arrowWidth*.5f;
-            rect->set_anchoredPosition({side==0?arrowCenter:-arrowCenter,0});
-        }
-    }
-    auto* value=setting->slider->_valueText.ptr();
-    if(value) { Stretch(Rect(value->get_gameObject()),1,1); value->set_alignment(TMPro::TextAlignmentOptions::Center); }
 }
 }
