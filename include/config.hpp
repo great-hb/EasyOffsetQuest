@@ -47,6 +47,7 @@ bool SaveTweakConfig();
 std::vector<std::string> ListPresets();
 bool SavePreset(const std::string& name);
 bool LoadPreset(const std::string& name);
+bool DeletePreset(const std::string& name);
 std::string CreatePreset();
 const std::string& PresetStatus();
 void SyncQuatFromEuler(HandTweakConfig& cfg);

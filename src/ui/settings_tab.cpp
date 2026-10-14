@@ -34,7 +34,10 @@ UnityW<TMPro::TextMeshProUGUI> g_status;
 UnityW<BSML::DropdownListSetting> g_presetDropdown;
 UnityW<BSML::DropdownListSetting> g_modeDropdown,g_buttonDropdown,g_typeDropdown,g_spaceDropdown;
 UnityW<BSML::ToggleSetting> g_freeHand,g_enabled;
-UnityW<UnityEngine::UI::Button> g_saveAs;
+UnityW<UnityEngine::UI::Button> g_saveAs,g_deleteButton;
+UnityW<BSML::ModalView> g_deleteModal;
+UnityW<TMPro::TextMeshProUGUI> g_deleteMessage;
+std::string g_pendingDelete;
 UnityW<HMUI::InputFieldView> g_nameField;
 UnityW<BSML::ModalKeyboard> g_nameKeyboard;
 // Expose the same factory used by BSML's string-setting tag for Lite UI.
@@ -88,6 +91,15 @@ void Step(int hand,int field,int direction) {
     RefreshSettingsValues();
 }
 void Status() { if(g_status) g_status->set_text(StringW(PresetStatus())); }
+void UpdateDeleteButton() {
+    if(g_deleteButton) g_deleteButton->set_interactable(!GetTweakConfig().uiLock && g_selectedPreset!="Default");
+}
+void DestroyPopup(BSML::ModalView* modal) {
+    modal->HMUI::ModalView::Hide(false,nullptr);
+    auto object=modal->get_gameObject();
+    object->SetActive(false); object->get_transform()->SetParent(nullptr,false);
+    UnityEngine::Object::Destroy(object);
+}
 void Mirror(int from) {
     if(GetTweakConfig().uiLock) return;
     GestureController::Cancel(); auto h=Hand(from);
@@ -197,7 +209,8 @@ void Build(UnityEngine::GameObject* container,bool first) {
     auto* bottom=OffsetUI::Row(vt,6);
     auto* presetCell=OffsetUI::Column(bottom->get_transform(),6);
     g_presetDropdown=BSML::Lite::CreateDropdown(presetCell->get_transform(),"",g_selectedPreset,std::span<std::string_view>(g_presetViews),[](StringW value) {
-        if(!g_syncing) g_selectedPreset=std::string(value);
+        if(g_syncing) return;
+        g_selectedPreset=std::string(value); UpdateDeleteButton();
     });
     OffsetUI::Dropdown(g_presetDropdown.ptr(),true);
     OffsetUI::Button(BSML::Lite::CreateUIButton(bottom->get_transform(),"Save",[] {
@@ -207,6 +220,35 @@ void Build(UnityEngine::GameObject* container,bool first) {
         if(GetTweakConfig().uiLock) return; GestureController::Cancel();
         LoadPreset(g_selectedPreset); RefreshSettingsValues(); Status();
     }),14);
+    g_deleteModal=BSML::Lite::CreateModal(container->get_transform(),{68,34},nullptr,true);
+    g_deleteModal->moveToCenter=true;
+    auto* deleteContent=OffsetUI::Column(g_deleteModal->get_transform(),28);
+    auto* deleteRect=OffsetUI::Rect(deleteContent->get_gameObject());
+    OffsetUI::Stretch(deleteRect); deleteRect->set_offsetMin({3,3}); deleteRect->set_offsetMax({-3,-3});
+    g_deleteMessage=OffsetUI::Text(deleteContent->get_transform(),"",14,3,true);
+    g_deleteMessage->set_richText(false);
+    g_deleteMessage->set_alignment(TMPro::TextAlignmentOptions::Center);
+    auto* deleteNote=OffsetUI::Text(deleteContent->get_transform(),"Your current offsets will be kept.",6,2.6f);
+    deleteNote->set_alignment(TMPro::TextAlignmentOptions::Center);
+    auto* deleteActions=OffsetUI::Row(deleteContent->get_transform(),6,2);
+    OffsetUI::Button(BSML::Lite::CreateUIButton(deleteActions->get_transform(),"Cancel",[] {
+        if(g_deleteModal) g_deleteModal->Hide();
+    }));
+    OffsetUI::Button(BSML::Lite::CreateUIButton(deleteActions->get_transform(),"Delete",[] {
+        if(GetTweakConfig().uiLock || !g_deleteModal) return;
+        GestureController::Cancel();
+        const auto name=g_pendingDelete;
+        g_deleteModal->HMUI::ModalView::Hide(false,nullptr);
+        if(DeletePreset(name)) RebuildSettingsTab();
+        else Status();
+    }));
+    g_deleteButton=BSML::Lite::CreateUIButton(bottom->get_transform(),"Delete",[] {
+        if(GetTweakConfig().uiLock || g_selectedPreset=="Default" || !g_deleteModal) return;
+        GestureController::Cancel(); g_pendingDelete=g_selectedPreset;
+        g_deleteMessage->set_text(StringW("Delete preset \""+g_pendingDelete+"\"?"));
+        g_deleteModal->Show();
+    });
+    OffsetUI::Button(g_deleteButton.ptr(),16);
     OffsetUI::Button(BSML::Lite::CreateUIButton(bottom->get_transform(),"Refresh",[] { RebuildSettingsTab(); }),18);
     auto* newPreset=OffsetUI::Row(vt,7);
     auto* nameCell=OffsetUI::Column(newPreset->get_transform(),7);
@@ -280,6 +322,7 @@ void RefreshSettingsValues() {
     }
     if(g_nameField) g_nameField->set_interactable(!GetTweakConfig().uiLock);
     if(g_saveAs) g_saveAs->set_interactable(!GetTweakConfig().uiLock);
+    UpdateDeleteButton();
     if(g_presetDropdown) g_presetDropdown->set_interactable(!GetTweakConfig().uiLock);
     Status(); g_syncing=false;
 }
@@ -290,13 +333,10 @@ void RebuildSettingsTab() {
     if(!g_container) return;
     GestureController::Cancel();
     // A shown modal is temporarily reparented outside the tab by HMUI.
-    if(g_nameKeyboard) {
-        g_nameKeyboard->modalView->HMUI::ModalView::Hide(false,nullptr);
-        auto keyboardObject=g_nameKeyboard->get_gameObject();
-        keyboardObject->SetActive(false); UnityEngine::Object::Destroy(keyboardObject);
-        g_nameKeyboard=nullptr;
-    }
-    g_nameField=nullptr;
+    if(g_nameKeyboard) DestroyPopup(g_nameKeyboard->modalView);
+    if(g_deleteModal) DestroyPopup(g_deleteModal.ptr());
+    g_nameKeyboard=nullptr; g_nameField=nullptr;
+    g_deleteModal=nullptr; g_deleteMessage=nullptr; g_deleteButton=nullptr; g_pendingDelete.clear();
     auto parent=g_container->get_transform();
     for(int i=parent->get_childCount()-1;i>=0;i--) {
         auto child=parent->GetChild(i)->get_gameObject();

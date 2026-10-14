@@ -138,6 +138,30 @@ bool LoadPreset(const std::string& name) {
     g_config.activePreset=name; g_activeWritable=true;
     bool ok=SaveTweakConfig(); if(ok) g_status="Loaded "+name; return ok;
 }
+bool DeletePreset(const std::string& name) {
+    if(g_config.uiLock) { g_status="UI is locked"; return false; }
+    if(!ValidName(name)) { g_status="Invalid preset name"; return false; }
+    if(name=="Default") { g_status="Default is the fallback preset"; return false; }
+    std::error_code ec;
+    const auto path=PresetsDir()/(name+".json");
+    if(!std::filesystem::is_regular_file(path,ec)) {
+        g_status=ec && ec!=std::errc::no_such_file_or_directory?"Cannot read preset":"Preset not found";
+        return false;
+    }
+    if(!std::filesystem::remove(path,ec)) {
+        g_status=ec?"Cannot delete preset":"Preset not found"; return false;
+    }
+    // The live offsets are stored separately in _active.json. Deleting a saved
+    // preset must not load or overwrite Default, or reset the current offsets.
+    if(g_config.activePreset==name) {
+        g_config.activePreset="Default";
+        if(!SaveTweakConfig()) {
+            g_status="Deleted "+name+"; active profile could not be saved";
+            return true;
+        }
+    }
+    g_status="Deleted "+name; return true;
+}
 std::string CreatePreset() {
     for(int i=1;i<10000;i++) {
         auto name="Preset "+std::to_string(i);
