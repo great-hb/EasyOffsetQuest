@@ -1,0 +1,67 @@
+{
+  "version": "0.1.0",
+  "sharedDir": "shared",
+  "dependenciesDir": "extern",
+  "info": {
+    "name": "Easy Offset Quest",
+    "id": "EasyOffsetQuest",
+    "version": "0.1.5",
+    "url": null,
+    "additionalData": {
+      "overrideSoName": "libEasyOffsetQuest.so",
+      "cmake": true
+    }
+  },
+  "workspace": {
+    "scripts": {
+      "build": [
+        "pwsh ./scripts/build.ps1"
+      ],
+      "qmod": [
+        "pwsh ./scripts/build.ps1",
+        "python tools/package.py"
+      ]
+    },
+    "qmodIncludeDirs": [
+      "./build",
+      "./extern/libs"
+    ],
+    "qmodIncludeFiles": [],
+    "qmodOutput": "./dist/EasyOffsetQuest.qmod",
+    "ndk": "=27.2.12479018"
+  },
+  "dependencies": [
+    {
+      "id": "scotland2",
+      "versionRange": "=0.1.7",
+      "additionalData": {
+        "includeQmod": false
+      }
+    },
+    {
+      "id": "beatsaber-hook",
+      "versionRange": "=6.4.2",
+      "additionalData": {}
+    },
+    {
+      "id": "bs-cordl",
+      "versionRange": "=4008.0.0",
+      "additionalData": {}
+    },
+    {
+      "id": "bsml",
+      "versionRange": "=0.4.55",
+      "additionalData": {}
+    },
+    {
+      "id": "custom-types",
+      "versionRange": "=0.18.4",
+      "additionalData": {}
+    },
+    {
+      "id": "paper2_scotland2",
+      "versionRange": "=4.7.0",
+      "additionalData": {}
+    }
+  ]
+}
