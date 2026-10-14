@@ -116,10 +116,11 @@ inline void Dropdown(BSML::DropdownListSetting* setting,bool compact=false) {
 }
 inline void Toggle(BSML::ToggleSetting* setting) {
     Bounds(setting->get_gameObject(),-1,6); Font(setting->text,3);
-    Stretch(Rect(setting->text->get_gameObject()),0,18);
+    constexpr float switchInset=2.5f;
+    Stretch(Rect(setting->text->get_gameObject()),0,18+switchInset);
     auto* rect=Rect(setting->toggle->get_gameObject());
     rect->set_anchorMin({1,.5f}); rect->set_anchorMax({1,.5f}); rect->set_pivot({1,.5f});
-    rect->set_anchoredPosition({0,0}); rect->set_sizeDelta({14,5});
+    rect->set_anchoredPosition({-switchInset,0}); rect->set_sizeDelta({14,5});
 }
 inline void Button(UnityEngine::UI::Button* button,float width=-1) {
     Bounds(button->get_gameObject(),width,6);
@@ -128,22 +129,29 @@ inline void Button(UnityEngine::UI::Button* button,float width=-1) {
 inline void Slider(BSML::SliderSetting* setting) {
     Bounds(setting->get_gameObject(),-1,5);
     if(setting->text) setting->text->get_gameObject()->SetActive(false);
-    Stretch(Rect(setting->slider->get_gameObject()),0,0);
+    constexpr float arrowWidth=5.f, edgeInset=.5f, arrowGap=.75f;
+    constexpr float barInset=edgeInset+arrowWidth+arrowGap;
+    auto root=setting->get_transform();
+    // Give the arrows and bar one coordinate frame, independent of prefab wrappers.
+    setting->slider->get_transform()->SetParent(root,false);
+    Stretch(Rect(setting->slider->get_gameObject()),barInset,barInset);
     Font(setting->slider->_valueText.ptr(),2.7f);
-    for(auto name:{"BG","SlidingArea"}) {
-        auto t=setting->slider->get_transform()->Find(name);
-        if(t) Stretch(t->GetComponent<UnityEngine::RectTransform*>(),6,6);
-    }
+    auto background=setting->slider->get_transform()->Find("BG");
+    if(background) Stretch(background->GetComponent<UnityEngine::RectTransform*>());
+    auto slidingArea=setting->slider->get_transform()->Find("SlidingArea");
+    if(slidingArea) Stretch(slidingArea->GetComponent<UnityEngine::RectTransform*>(),1,1);
     if(setting->decButton && setting->incButton) {
         for(int side=0;side<2;side++) {
             auto* button=side==0?setting->decButton:setting->incButton;
             auto* rect=Rect(button->get_gameObject());
+            rect->SetParent(root,false);
             rect->set_anchorMin({float(side),.5f}); rect->set_anchorMax({float(side),.5f});
-            rect->set_pivot({float(side),.5f}); rect->set_sizeDelta({5,4.5f});
-            rect->set_anchoredPosition({side==0?.5f:-.5f,0});
+            rect->set_pivot({.5f,.5f}); rect->set_sizeDelta({arrowWidth,4.5f});
+            constexpr float arrowCenter=edgeInset+arrowWidth*.5f;
+            rect->set_anchoredPosition({side==0?arrowCenter:-arrowCenter,0});
         }
     }
     auto* value=setting->slider->_valueText.ptr();
-    if(value) { Stretch(Rect(value->get_gameObject()),7,7); value->set_alignment(TMPro::TextAlignmentOptions::Center); }
+    if(value) { Stretch(Rect(value->get_gameObject()),1,1); value->set_alignment(TMPro::TextAlignmentOptions::Center); }
 }
 }

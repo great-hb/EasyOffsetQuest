@@ -3,7 +3,7 @@
   "name": "Easy Offset Quest",
   "id": "EasyOffsetQuest",
   "author": "EasyOffsetQuest contributors; based on Reezonate and lxtend's work",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "modloader": "Scotland2",
   "packageId": "com.beatgames.beatsaber",
   "packageVersion": "1.40.8_7379",

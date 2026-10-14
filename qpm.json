@@ -5,7 +5,7 @@
   "info": {
     "name": "Easy Offset Quest",
     "id": "EasyOffsetQuest",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "url": null,
     "additionalData": {
       "overrideSoName": "libEasyOffsetQuest.so",
