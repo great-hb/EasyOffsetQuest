@@ -25,9 +25,14 @@ Install `EasyOffsetQuest.qmod` using [ModsBeforeFriday (MBF)](https://mbf.bsques
 
 4. In the Easy Offset tab, press **Refresh**, select the preset, and press **Load**.
 
-Use **PC Meta Link** as the profile tracking space for PC presets. Use a saved preset from the `Presets` folder; the PC application's main `UserData/EasyOffset.json` file has a different format.
+Use **PC Meta Link** as the profile tracking space for PC presets. 
 
-**Save** updates the selected preset. **Save As** creates a new named preset from the entered name. **Delete** removes the selected preset after confirmation; Default is kept as the fallback preset. Controller adjustments are also saved automatically between launches.
+- **Save** updates the selected preset.
+- **Save As** creates a new named preset from the entered name.
+- **Delete** removes the selected preset after confirmation; 
+ Default is kept as the fallback preset.
+
+Controller adjustments are also saved automatically between launches.
 
 ## Building
 
