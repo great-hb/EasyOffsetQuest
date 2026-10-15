@@ -11,8 +11,6 @@ Note: This mod was developed almost entirely with AI. I know how to code, but I'
 - Undo/redo history.
 - Room Offset adjustment mode.
 - Import from base-game controller settings and Universal Import from other mods.
-- PC-style pivot grids and rotation spheres.
-- Built-in video user guide.
 
 ## Installation
 
