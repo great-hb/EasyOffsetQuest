@@ -1,8 +1,18 @@
 # EasyOffsetQuest
 
-EasyOffsetQuest was created primarily to bring PC EasyOffset controller settings to native Quest Beat Saber **1.40.8** (tested only on Quest 2). This mod has a much smaller feature set compared to PC EasyOffset.
+EasyOffsetQuest was created primarily to bring PC EasyOffset controller settings to native Quest Beat Saber **1.40.8** (tested only on Quest 2).
 
 Note: This mod was developed almost entirely with AI. I know how to code, but I'm not trying to spend hours learning how to create mods on quest when all I want is my controller offsets. Sue me.
+
+## PC features not included
+
+- Swing Benchmark measurements and swing-based correction tools.
+- Curve/Balance sliders and reference setup, update, and clear controls.
+- Undo/redo history.
+- Room Offset adjustment mode.
+- Import from base-game controller settings and Universal Import from other mods.
+- PC-style pivot grids and rotation spheres.
+- Built-in video user guide.
 
 ## Installation
 
