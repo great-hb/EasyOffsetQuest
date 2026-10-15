@@ -1,6 +1,6 @@
 # EasyOffsetQuest
 
-EasyOffsetQuest was created primarily to bring PC EasyOffset controller settings to native Quest Beat Saber **1.40.8** (tested only on Quest 2).
+EasyOffsetQuest was created primarily to bring [PC EasyOffset](https://github.com/Reezonate/EasyOffset) controller settings to native Quest Beat Saber **1.40.8** (tested only on Quest 2).
 
 Note: This mod was developed almost entirely with AI. I know how to code, but I'm not trying to spend hours learning how to create mods on quest when all I want is my controller offsets. Sue me.
 
