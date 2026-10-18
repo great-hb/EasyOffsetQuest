@@ -59,6 +59,14 @@ python tools/prepare_dependencies.py
 
 The first setup downloads the build tools and dependencies. The finished mod is written to `dist/EasyOffsetQuest.qmod`.
 
+## GitHub builds
+
+GitHub Actions builds the mod on pushes to `main`, pull requests, and manual runs from **Actions → Build QMOD**. Successful runs provide a QMOD, checksums, and a build report under **Artifacts**. No extra repository secrets are needed.
+
+For a release, keep the version in `mod.json`, `qpm.json`, `qpm.shared.json`, and `CMakeLists.txt` consistent, then push the matching `v<version>` tag. CI builds the QMOD and attaches it to a **draft** release. Download the Actions artifact, install its QMOD through MBF, and test it in-game before publishing the draft. Automated checks validate MBF's manifest schema, package contents, ARM64 library, and offset math; they do not run MBF or Beat Saber.
+
+The workflow follows the QPM/NDK build pattern used by [Quest-BSML](https://github.com/bsq-ports/Quest-BSML/blob/master/.github/workflows/build-ndk.yml) and [custom-types](https://github.com/QuestPackageManager/Il2CppQuestTypePatching/blob/master/.github/workflows/build-ndk.yml).
+
 ## Credits
 
 - [EasyOffset](https://github.com/Reezonate/EasyOffset) by **Reezonate** — PC preset format, offset behavior, and UI inspiration.

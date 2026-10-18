@@ -1,19 +1,30 @@
 """Package the mod and check ARM64, loader exports, and segment alignment."""
+import argparse
 import hashlib
 import json
 import shutil
 import struct
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--ndk',type=Path,help='Android NDK root (defaults to ndkpath.txt or the local r27c toolchain)')
+args=parser.parse_args()
 dist=ROOT/'dist'; dist.mkdir(exist_ok=True)
 original=ROOT/'build/libEasyOffsetQuest.so'
 if not original.is_file(): raise SystemExit('Compile the mod first.')
 manifest=json.loads((ROOT/'mod.json').read_text())
-ndk=ROOT/'toolchain/android-ndk-r27c/toolchains/llvm/prebuilt/windows-x86_64/bin'
+ndk_root=args.ndk
+if ndk_root is None:
+    path_file=ROOT/'ndkpath.txt'
+    ndk_root=Path(path_file.read_text().strip()) if path_file.exists() else ROOT/'toolchain/android-ndk-r27c'
+host='windows-x86_64' if sys.platform=='win32' else 'darwin-x86_64' if sys.platform=='darwin' else 'linux-x86_64'
+suffix='.exe' if sys.platform=='win32' else ''
+ndk=ndk_root/'toolchains/llvm/prebuilt'/host/'bin'
 library=dist/'libEasyOffsetQuest.so'; shutil.copy2(original,library)
-subprocess.run([str(ndk/'llvm-strip.exe'),'--strip-unneeded',str(library)],check=True)
+subprocess.run([str(ndk/('llvm-strip'+suffix)),'--strip-unneeded',str(library)],check=True)
 binary=library.read_bytes()
 assert binary[:6]==b'\x7fELF\x02\x01' and struct.unpack_from('<H',binary,18)[0]==183
 phoff=struct.unpack_from('<Q',binary,32)[0]; entsize,count=struct.unpack_from('<HH',binary,54)
@@ -21,10 +32,10 @@ alignments=[]
 for i in range(count):
     row=struct.unpack_from('<IIQQQQQQ',binary,phoff+i*entsize)
     if row[0]==1: alignments.append(row[7]); assert row[7]>=16384
-symbols=subprocess.check_output([str(ndk/'llvm-readelf.exe'),'-Ws',str(library)],text=True)
+symbols=subprocess.check_output([str(ndk/('llvm-readelf'+suffix)),'-Ws',str(library)],text=True)
 for symbol in ['setup','late_load']:
     assert any(line.endswith(' '+symbol) and 'GLOBAL' in line and 'UND' not in line for line in symbols.splitlines())
-needed=subprocess.check_output([str(ndk/'llvm-readelf.exe'),'-d',str(library)],text=True)
+needed=subprocess.check_output([str(ndk/('llvm-readelf'+suffix)),'-d',str(library)],text=True)
 assert '.debug.so' not in needed
 libraries=[line.split('[',1)[1].split(']',1)[0] for line in needed.splitlines() if '(NEEDED)' in line]
 assert set(libraries)<=set(['libbeatsaber-hook.so','libbsml.so','libcustom-types.so','libpaper2_scotland2.so','libsl2.so','libtinyxml2.so','liblog.so','libm.so','libdl.so','libc.so'])
